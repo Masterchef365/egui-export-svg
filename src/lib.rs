@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use egui::{layers::PaintList, Color32, LayerId, Shape as EguiShape, Ui};
-use svg::{node::element::{Path as SvgPath, Group}, Node};
+use svg::{
+    node::element::{Group, Path as SvgPath},
+    Node,
+};
 
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match shape {
@@ -61,7 +64,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 };
 
                 let font_size = sec.format.font_id.size;
-                let mut color = sec.format.color;
+                let mut color = text.override_text_color.unwrap_or(sec.format.color);
                 if color == Color32::PLACEHOLDER {
                     color = text.fallback_color;
                 }
@@ -69,14 +72,16 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 let length = text.galley.rect.width();
                 dbg!(&sec.format.font_id.family);
 
-                group = group.add(svg::node::element::Text::new(&s[sec.byte_range.clone()])
-                    .set("x", sec.leading_space + text.pos.x)
-                    .set("y", text.pos.y + font_size)
-                    .set("font-size", font_size)
-                    .set("font-family", font_family)
-                    .set("text-anchor", anchor)
-                    .set("textLength", length)
-                    .set("fill", convert_color(color)));
+                group = group.add(
+                    svg::node::element::Text::new(&s[sec.byte_range.clone()])
+                        .set("x", sec.leading_space + text.pos.x)
+                        .set("y", text.pos.y + font_size)
+                        .set("font-size", font_size)
+                        .set("font-family", font_family)
+                        .set("text-anchor", anchor)
+                        .set("textLength", length)
+                        .set("fill", convert_color(color)),
+                );
             }
 
             Box::new(group)

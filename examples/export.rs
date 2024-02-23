@@ -25,7 +25,6 @@ fn main() -> eframe::Result<()> {
             take_snapshot |= ui.button("SVG SNAPSHOT").clicked();
         });
 
-
         if take_snapshot {
             let doc = snapshot(ctx);
             let file = std::fs::File::create("snap.svg").unwrap();
