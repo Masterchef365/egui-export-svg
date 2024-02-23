@@ -9,6 +9,13 @@ use svg::{
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match shape {
         egui::Shape::Noop => Box::new(SvgPath::default()),
+        egui::Shape::Vec(children) => {
+            let mut group = Group::new();
+            for child in children {
+                group = group.add(shape_to_path(child));
+            }
+            Box::new(group)
+        }
         egui::Shape::Circle(circle) => Box::new(
             svg::node::element::Circle::new()
                 .set("cx", circle.center.x)
@@ -17,6 +24,15 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 .set("fill", convert_color(circle.fill))
                 .set("stroke-width", circle.stroke.width)
                 .set("stroke", convert_color(circle.stroke.color)),
+        ),
+        egui::Shape::LineSegment { points, stroke } => Box::new(
+            svg::node::element::Line::new()
+                .set("x1", points[0].x)
+                .set("y1", points[0].y)
+                .set("x2", points[1].x)
+                .set("y2", points[1].y)
+                .set("stroke-width", stroke.width)
+                .set("stroke", convert_color(stroke.color)),
         ),
         EguiShape::Rect(rectangle) => {
             if !rectangle.rounding.is_same() {
