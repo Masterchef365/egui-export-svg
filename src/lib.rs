@@ -2,13 +2,34 @@ use std::collections::HashMap;
 
 use egui::{layers::PaintList, Color32, LayerId, Shape as EguiShape, Ui};
 use svg::{
-    node::element::{path::Data, Group, Path as SvgPath},
+    node::element::{path::Data, Group, Path as SvgPath, tag::Group},
     Node,
 };
 
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match shape {
-        egui::Shape::Noop => Box::new(SvgPath::default()),
+        egui::Shape::Mesh(mesh) => {
+            dbg!(&mesh);
+            let mut group = Group::new();
+            for tri in mesh.indices.chunks_exact(3) {
+                let mut data = Data::new();
+                for idx in tri {
+                    let pt = mesh.vertices[*idx as usize].pos;
+                    data = data.move_to((pt.x, pt.y));
+                }
+                data = data.close();
+
+                let color = mesh.vertices[tri[0] as usize].color;
+                let path = svg::node::element::Path::new()
+                    .set("fill", convert_color(color))
+                    .set("d", data);
+
+                group = group.add(path);
+
+            }
+            Box::new(group)
+        }
+        _ | egui::Shape::Noop => Box::new(SvgPath::default()),
         egui::Shape::Vec(children) => {
             let mut group = Group::new();
             for child in children {
