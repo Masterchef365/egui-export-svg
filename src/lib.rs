@@ -48,6 +48,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 group = group.add(svg::node::element::Text::new(&s[sec.byte_range.clone()])
                     .set("x", text.pos.x)
                     .set("y", text.pos.y)
+                    .set("font-size", sec.format.font_id.size)
                     .set("fill", convert_color(sec.format.color)));
             }
 
