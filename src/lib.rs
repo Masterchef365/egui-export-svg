@@ -51,10 +51,11 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     egui::Align::Max => "end",
                 };
 
+                let font_size = sec.format.font_id.size;
                 group = group.add(svg::node::element::Text::new(&s[sec.byte_range.clone()])
-                    .set("x", text.pos.x)
-                    .set("y", text.pos.y)
-                    .set("font-size", sec.format.font_id.size)
+                    .set("x", sec.leading_space + text.pos.x)
+                    .set("y", text.pos.y + font_size)
+                    .set("font-size", font_size)
                     .set("font-family", "sans-serif")
                     .set("text-anchor", anchor)
                     .set("fill", convert_color(sec.format.color)));
