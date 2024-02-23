@@ -1,16 +1,29 @@
 use std::collections::HashMap;
 
-use egui::{layers::PaintList, LayerId, Shape as EguiShape, Ui};
+use egui::{layers::PaintList, LayerId, Shape as EguiShape, Ui, Color32};
 use svg::node::element::Path as SvgPath;
 
-pub fn shape_to_path(shape: &egui::Shape) -> SvgPath {
+pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match dbg!(&shape) {
-        egui::Shape::Noop => SvgPath::default(),
+        egui::Shape::Noop => Box::new(SvgPath::default()),
+        egui::Shape::Circle(circle) => {
+            Box::new(svg::node::element::Circle::new()
+                .set("cx", circle.center.x)
+                .set("cy", circle.center.y)
+                .set("r", circle.radius)
+                .set("fill", convert_color(circle.fill))
+                .set("stroke-width", circle.stroke.width)
+                .set("stroke", convert_color(circle.stroke.color)))
+        },
         other => {
             dbg!(other);
-            SvgPath::default()
+            Box::new(SvgPath::default())
         }
     }
+}
+
+fn convert_color(color: Color32) -> String {
+    format!("rgba({}, {}, {}, {})", color.r(), color.g(), color.b(), color.a())
 }
 
 fn copy_paintlists(ctx: &egui::Context) -> HashMap<egui::LayerId, PaintList> {
