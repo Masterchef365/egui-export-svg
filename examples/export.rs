@@ -7,6 +7,7 @@ fn main() -> eframe::Result<()> {
 
     let options = eframe::NativeOptions::default();
     eframe::run_simple_native("Egui export SVG", options, move |ctx, _frame| {
+        let mut take_snapshot = false;
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("My egui Application");
@@ -20,10 +21,15 @@ fn main() -> eframe::Result<()> {
                 age += 1;
             }
             ui.label(format!("Hello '{name}', age {age}"));
+
+            take_snapshot |= ui.button("SVG SNAPSHOT").clicked();
         });
 
 
-        let svg = snapshot(ctx);
-        dbg!(svg.to_string());
+        if take_snapshot {
+            let doc = snapshot(ctx);
+            let file = std::fs::File::create("snap.svg").unwrap();
+            svg::write(file, &doc).unwrap();
+        }
     })
 }

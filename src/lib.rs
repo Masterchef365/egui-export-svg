@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use egui::{layers::PaintList, Shape as EguiShape, Ui};
+use egui::{layers::PaintList, LayerId, Shape as EguiShape, Ui};
 use svg::node::element::Path as SvgPath;
 
 pub fn shape_to_path(shape: &egui::Shape) -> SvgPath {
@@ -14,12 +14,12 @@ pub fn shape_to_path(shape: &egui::Shape) -> SvgPath {
 }
 
 fn copy_paintlists(ctx: &egui::Context) -> HashMap<egui::LayerId, PaintList> {
+    let layer_ids: Vec<LayerId> = ctx.memory(|mem| mem.layer_ids().collect());
     ctx.graphics(|gfx| {
-        ctx.memory(|mem| {
-            mem.layer_ids()
-                .filter_map(|id| gfx.get(id).map(|paint| (id, paint.clone())))
-                .collect()
-        })
+        layer_ids
+            .into_iter()
+            .filter_map(|id| gfx.get(id).map(|paint| (id, paint.clone())))
+            .collect()
     })
 }
 
@@ -36,9 +36,13 @@ pub fn snapshot(ctx: &egui::Context) -> svg::Document {
     // Set viewbox to screen rect.
     // TODO: Is this what we want?
     let screen_rect = ctx.screen_rect();
-    let viewbox = (screen_rect.min.x, screen_rect.min.y, screen_rect.width(), screen_rect.height());
-    let mut document = svg::Document::new()
-        .set("viewBox", viewbox);
+    let viewbox = (
+        screen_rect.min.x,
+        screen_rect.min.y,
+        screen_rect.width(),
+        screen_rect.height(),
+    );
+    let mut document = svg::Document::new().set("viewBox", viewbox);
 
     // Sort layers back to front
     let mut paintlists: Vec<(egui::LayerId, PaintList)> = paintlists.into_iter().collect();
