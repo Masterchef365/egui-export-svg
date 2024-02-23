@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use egui::{layers::PaintList, Color32, LayerId, Shape as EguiShape, Ui};
 use svg::{
-    node::element::{Group, Path as SvgPath},
+    node::element::{path::Data, Group, Path as SvgPath},
     Node,
 };
 
@@ -15,6 +15,23 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 group = group.add(shape_to_path(child));
             }
             Box::new(group)
+        }
+        egui::Shape::Path(path) => {
+            let mut data = Data::new();
+            for pt in &path.points {
+                data = data.move_to((pt.x, pt.y));
+            }
+            if path.closed {
+                data = data.close();
+            }
+
+            Box::new(
+                svg::node::element::Path::new()
+                    .set("fill", convert_color(path.fill))
+                    .set("stroke-width", path.stroke.width)
+                    .set("stroke", convert_color(path.stroke.color))
+                    .set("d", data),
+            )
         }
         egui::Shape::Circle(circle) => Box::new(
             svg::node::element::Circle::new()
