@@ -52,13 +52,18 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 };
 
                 let font_size = sec.format.font_id.size;
+                let mut color = sec.format.color;
+                if color == Color32::PLACEHOLDER {
+                    color = text.fallback_color;
+                }
+
                 group = group.add(svg::node::element::Text::new(&s[sec.byte_range.clone()])
                     .set("x", sec.leading_space + text.pos.x)
                     .set("y", text.pos.y + font_size)
                     .set("font-size", font_size)
                     .set("font-family", "sans-serif")
                     .set("text-anchor", anchor)
-                    .set("fill", convert_color(sec.format.color)));
+                    .set("fill", convert_color(color)));
             }
 
             Box::new(group)
