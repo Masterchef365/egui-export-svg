@@ -51,18 +51,31 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     egui::Align::Max => "end",
                 };
 
+                let font_family = match &sec.format.font_id.family {
+                    egui::FontFamily::Proportional => "sans-serif",
+                    egui::FontFamily::Monospace => "monospace",
+                    egui::FontFamily::Name(fam) => {
+                        eprintln!("Font family {} unsupported!", fam);
+                        "sans-serif"
+                    }
+                };
+
                 let font_size = sec.format.font_id.size;
                 let mut color = sec.format.color;
                 if color == Color32::PLACEHOLDER {
                     color = text.fallback_color;
                 }
 
+                let length = text.galley.rect.width();
+                dbg!(&sec.format.font_id.family);
+
                 group = group.add(svg::node::element::Text::new(&s[sec.byte_range.clone()])
                     .set("x", sec.leading_space + text.pos.x)
                     .set("y", text.pos.y + font_size)
                     .set("font-size", font_size)
-                    .set("font-family", "sans-serif")
+                    .set("font-family", font_family)
                     .set("text-anchor", anchor)
+                    .set("textLength", length)
                     .set("fill", convert_color(color)));
             }
 
