@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use egui::{layers::PaintList, Color32, LayerId, Shape as EguiShape, Ui};
-use svg::{node::element::Path as SvgPath, Node};
+use svg::{node::element::{Path as SvgPath, Group}, Node};
 
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match shape {
@@ -40,12 +40,18 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
             )
         }
         EguiShape::Text(text) => {
-            let content = text.galley.job.text.clone();
-            Box::new(
-                svg::node::element::Text::new(content)
+            let mut group = Group::new();
+
+            let s = text.galley.text();
+
+            for sec in &text.galley.job.sections {
+                group = group.add(svg::node::element::Text::new(&s[sec.byte_range.clone()])
                     .set("x", text.pos.x)
-                    .set("y", text.pos.y),
-            )
+                    .set("y", text.pos.y)
+                    .set("fill", convert_color(sec.format.color)));
+            }
+
+            Box::new(group)
         }
         other => {
             println!("{:?}", other);
