@@ -45,10 +45,17 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
             let s = text.galley.text();
 
             for sec in &text.galley.job.sections {
+                let anchor = match text.galley.job.halign {
+                    egui::Align::Min => "start",
+                    egui::Align::Center => "middle",
+                    egui::Align::Max => "end",
+                };
+
                 group = group.add(svg::node::element::Text::new(&s[sec.byte_range.clone()])
                     .set("x", text.pos.x)
                     .set("y", text.pos.y)
                     .set("font-size", sec.format.font_id.size)
+                    .set("text-anchor", anchor)
                     .set("fill", convert_color(sec.format.color)));
             }
 
