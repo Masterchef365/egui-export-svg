@@ -1,20 +1,41 @@
 use std::collections::HashMap;
 
-use egui::{layers::PaintList, LayerId, Shape as EguiShape, Ui, Color32};
+use egui::{layers::PaintList, Color32, LayerId, Shape as EguiShape, Ui};
 use svg::node::element::Path as SvgPath;
 
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
-    match dbg!(&shape) {
+    match shape {
         egui::Shape::Noop => Box::new(SvgPath::default()),
-        egui::Shape::Circle(circle) => {
-            Box::new(svg::node::element::Circle::new()
+        egui::Shape::Circle(circle) => Box::new(
+            svg::node::element::Circle::new()
                 .set("cx", circle.center.x)
                 .set("cy", circle.center.y)
                 .set("r", circle.radius)
                 .set("fill", convert_color(circle.fill))
                 .set("stroke-width", circle.stroke.width)
-                .set("stroke", convert_color(circle.stroke.color)))
-        },
+                .set("stroke", convert_color(circle.stroke.color)),
+        ),
+        EguiShape::Rect(rectangle) => {
+            // TODO: Implement per-edge rounding ...
+            let rounding = 0_f32
+                .max(rectangle.rounding.nw)
+                .max(rectangle.rounding.ne)
+                .max(rectangle.rounding.sw)
+                .max(rectangle.rounding.se);
+
+            Box::new(
+                svg::node::element::Rectangle::new()
+                    .set("x", rectangle.rect.min.x)
+                    .set("y", rectangle.rect.min.y)
+                    .set("rx", rounding)
+                    .set("ry", rounding)
+                    .set("width", rectangle.rect.width())
+                    .set("height", rectangle.rect.height())
+                    .set("fill", convert_color(rectangle.fill))
+                    .set("stroke-width", rectangle.stroke.width)
+                    .set("stroke", convert_color(rectangle.stroke.color)),
+            )
+        }
         other => {
             dbg!(other);
             Box::new(SvgPath::default())
@@ -23,7 +44,13 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
 }
 
 fn convert_color(color: Color32) -> String {
-    format!("rgba({}, {}, {}, {})", color.r(), color.g(), color.b(), color.a())
+    format!(
+        "rgba({}, {}, {}, {})",
+        color.r(),
+        color.g(),
+        color.b(),
+        color.a()
+    )
 }
 
 fn copy_paintlists(ctx: &egui::Context) -> HashMap<egui::LayerId, PaintList> {
