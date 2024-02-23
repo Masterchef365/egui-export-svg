@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use egui::{layers::PaintList, Color32, LayerId, Shape as EguiShape, Ui};
-use svg::node::element::Path as SvgPath;
+use svg::{node::element::Path as SvgPath, Node};
 
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match shape {
@@ -16,7 +16,10 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 .set("stroke", convert_color(circle.stroke.color)),
         ),
         EguiShape::Rect(rectangle) => {
-            // TODO: Implement per-edge rounding ...
+            if !rectangle.rounding.is_same() {
+                eprintln!("TODO: Implement per-edge rounding ...")
+            }
+
             let rounding = 0_f32
                 .max(rectangle.rounding.nw)
                 .max(rectangle.rounding.ne)
@@ -36,8 +39,16 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     .set("stroke", convert_color(rectangle.stroke.color)),
             )
         }
+        EguiShape::Text(text) => {
+            let content = text.galley.job.text.clone();
+            Box::new(
+                svg::node::element::Text::new(content)
+                    .set("x", text.pos.x)
+                    .set("y", text.pos.y),
+            )
+        }
         other => {
-            dbg!(other);
+            println!("{:?}", other);
             Box::new(SvgPath::default())
         }
     }
