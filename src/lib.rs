@@ -55,6 +55,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     .set("x", text.pos.x)
                     .set("y", text.pos.y)
                     .set("font-size", sec.format.font_id.size)
+                    .set("font-family", "sans-serif")
                     .set("text-anchor", anchor)
                     .set("fill", convert_color(sec.format.color)));
             }
