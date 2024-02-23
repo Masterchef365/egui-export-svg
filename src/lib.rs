@@ -47,6 +47,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
 
             let s = text.galley.text();
 
+            // TODO: Different sections have different positions?
             for sec in &text.galley.job.sections {
                 let anchor = match text.galley.job.halign {
                     egui::Align::Min => "start",
@@ -69,14 +70,11 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     color = text.fallback_color;
                 }
 
+                // Stretch the text to fit the rectangle
                 let length = text.galley.rect.width();
 
                 // Account for the space between the bottom of the text and the baseline
                 let y_offset = text.galley.rect.height() - font_size;
-
-                //dbg!(&sec.format.font_id.family);
-                //text.galley.job.text
-                //dbg!(sec.format.line_height);
 
                 group = group.add(
                     svg::node::element::Text::new(&s[sec.byte_range.clone()])

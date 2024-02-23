@@ -11,3 +11,4 @@ svg = "0.16.0"
 
 [dev-dependencies]
 eframe = "0.26.2"
+egui_demo_lib = "0.26.2"
