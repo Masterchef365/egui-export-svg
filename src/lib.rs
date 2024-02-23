@@ -70,12 +70,18 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 }
 
                 let length = text.galley.rect.width();
-                dbg!(&sec.format.font_id.family);
+
+                // Account for the space between the bottom of the text and the baseline
+                let y_offset = text.galley.rect.height() - font_size;
+
+                //dbg!(&sec.format.font_id.family);
+                //text.galley.job.text
+                //dbg!(sec.format.line_height);
 
                 group = group.add(
                     svg::node::element::Text::new(&s[sec.byte_range.clone()])
                         .set("x", sec.leading_space + text.pos.x)
-                        .set("y", text.pos.y + font_size)
+                        .set("y", text.pos.y + font_size - y_offset)
                         .set("font-size", font_size)
                         .set("font-family", font_family)
                         .set("text-anchor", anchor)
