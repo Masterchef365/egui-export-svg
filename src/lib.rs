@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-use egui::{layers::PaintList, Color32, LayerId, Shape as EguiShape, Ui};
+use egui::{layers::PaintList, Color32, LayerId, Shape as EguiShape};
 use svg::{
-    node::element::{path::Data, tag::Group, Group, Path as SvgPath},
+    node::element::{path::Data, Group, Path as SvgPath},
     Node,
 };
 
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match shape {
-        egui::Shape::Mesh(mesh) => Box::new(SvgPath::default()),
+        egui::Shape::Mesh(_mesh) => Box::new(SvgPath::default()),
         /*egui::Shape::Mesh(mesh) => {
             dbg!(&mesh);
             let mut group = Group::new();
@@ -66,8 +66,8 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 .set("cx", circle.center.x)
                 .set("cy", circle.center.y)
                 .set("r", circle.radius)
-                    .fill(circle.fill)
-                    .stroke(circle.stroke)
+                .fill(circle.fill)
+                .stroke(circle.stroke),
         ),
         egui::Shape::LineSegment { points, stroke } => Box::new(
             svg::node::element::Line::new()
@@ -75,7 +75,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 .set("y1", points[0].y)
                 .set("x2", points[1].x)
                 .set("y2", points[1].y)
-                .stroke(*stroke)
+                .stroke(*stroke),
         ),
         EguiShape::Rect(rectangle) => {
             if !rectangle.rounding.is_same() {
@@ -97,7 +97,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     .set("width", rectangle.rect.width())
                     .set("height", rectangle.rect.height())
                     .fill(rectangle.fill)
-                    .stroke(rectangle.stroke)
+                    .stroke(rectangle.stroke),
             )
         }
         EguiShape::Text(text) => {
@@ -142,7 +142,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                         .set("font-family", font_family)
                         .set("text-anchor", anchor)
                         .set("textLength", length)
-                        .fill(color)
+                        .fill(color),
                 );
             }
 

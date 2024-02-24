@@ -3,8 +3,8 @@ use egui_export_svg::snapshot;
 
 fn main() -> eframe::Result<()> {
     // Our application state:
-    let mut name = "Arthur".to_owned();
-    let mut age = 42;
+    let _name = "Arthur".to_owned();
+    let _age = 42;
 
     let mut demo = DemoWindows::default();
 
