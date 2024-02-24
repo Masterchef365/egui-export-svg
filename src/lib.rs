@@ -2,13 +2,14 @@ use std::collections::HashMap;
 
 use egui::{layers::PaintList, Color32, LayerId, Shape as EguiShape, Ui};
 use svg::{
-    node::element::{path::Data, Group, Path as SvgPath, tag::Group},
+    node::element::{path::Data, tag::Group, Group, Path as SvgPath},
     Node,
 };
 
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match shape {
-        egui::Shape::Mesh(mesh) => {
+        egui::Shape::Mesh(mesh) => Box::new(SvgPath::default()),
+        /*egui::Shape::Mesh(mesh) => {
             dbg!(&mesh);
             let mut group = Group::new();
             for tri in mesh.indices.chunks_exact(3) {
@@ -32,7 +33,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
 
             }
             Box::new(group)
-        }
+        }*/
         egui::Shape::Noop => Box::new(SvgPath::default()),
         egui::Shape::Vec(children) => {
             let mut group = Group::new();
@@ -55,21 +56,18 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
 
             Box::new(
                 svg::node::element::Path::new()
-                    .set("fill", convert_color(path.fill))
-                    .set("stroke-width", path.stroke.width)
-                    .set("stroke", convert_color(path.stroke.color))
+                    .fill(path.fill)
+                    .stroke(path.stroke)
                     .set("d", data),
             )
         }
-        /*
         egui::Shape::Circle(circle) => Box::new(
             svg::node::element::Circle::new()
                 .set("cx", circle.center.x)
                 .set("cy", circle.center.y)
                 .set("r", circle.radius)
-                .set("fill", convert_color(circle.fill))
-                .set("stroke-width", circle.stroke.width)
-                .set("stroke", convert_color(circle.stroke.color)),
+                    .fill(circle.fill)
+                    .stroke(circle.stroke)
         ),
         egui::Shape::LineSegment { points, stroke } => Box::new(
             svg::node::element::Line::new()
@@ -77,8 +75,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 .set("y1", points[0].y)
                 .set("x2", points[1].x)
                 .set("y2", points[1].y)
-                .set("stroke-width", stroke.width)
-                .set("stroke", convert_color(stroke.color)),
+                .stroke(*stroke)
         ),
         EguiShape::Rect(rectangle) => {
             if !rectangle.rounding.is_same() {
@@ -99,9 +96,8 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     .set("ry", rounding)
                     .set("width", rectangle.rect.width())
                     .set("height", rectangle.rect.height())
-                    .set("fill", convert_color(rectangle.fill))
-                    .set("stroke-width", rectangle.stroke.width)
-                    .set("stroke", convert_color(rectangle.stroke.color)),
+                    .fill(rectangle.fill)
+                    .stroke(rectangle.stroke)
             )
         }
         EguiShape::Text(text) => {
@@ -146,28 +142,17 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                         .set("font-family", font_family)
                         .set("text-anchor", anchor)
                         .set("textLength", length)
-                        .set("fill", convert_color(color)),
+                        .fill(color)
                 );
             }
 
             Box::new(group)
         }
-        */
         other => {
             println!("{:?}", other);
             Box::new(SvgPath::default())
         }
     }
-}
-
-fn convert_color(color: Color32) -> String {
-    format!(
-        "rgba({}, {}, {}, {})",
-        color.r(),
-        color.g(),
-        color.b(),
-        color.a()
-    )
 }
 
 fn copy_paintlists(ctx: &egui::Context) -> HashMap<egui::LayerId, PaintList> {
@@ -179,6 +164,31 @@ fn copy_paintlists(ctx: &egui::Context) -> HashMap<egui::LayerId, PaintList> {
             .collect()
     })
 }
+
+fn color32_rgb(color: Color32) -> String {
+    format!("rgb({}, {}, {})", color.r(), color.g(), color.b())
+}
+
+trait EguiColorable: svg::Node + Sized {
+    fn fill(mut self, color: Color32) -> Self {
+        self.assign("fill", color32_rgb(color));
+        if color.a() != 255 {
+            self.assign("fill-opacity", color.a() as f32 / 255.0)
+        }
+        self
+    }
+
+    fn stroke(mut self, stroke: egui::Stroke) -> Self {
+        self.assign("stroke-width", stroke.width);
+        self.assign("stroke", color32_rgb(stroke.color));
+        if stroke.color.a() != 255 {
+            self.assign("stroke-opacity", stroke.color.a() as f32 / 255.0)
+        }
+        self
+    }
+}
+
+impl<T: svg::Node + Sized> EguiColorable for T {}
 
 /*
 pub fn wrap(ui: &mut Ui, f: impl FnOnce(&mut Ui) -> egui::InnerResponse<bool>) -> egui::Response {
