@@ -165,25 +165,19 @@ fn copy_paintlists(ctx: &egui::Context) -> HashMap<egui::LayerId, PaintList> {
     })
 }
 
-fn color32_rgb(color: Color32) -> String {
-    format!("rgb({}, {}, {})", color.r(), color.g(), color.b())
+fn color32_rgba(color: Color32) -> String {
+    format!("rgba({}, {}, {}, {})", color.r(), color.g(), color.b(), color.a() as f32 / 255.0)
 }
 
 trait EguiColorable: svg::Node + Sized {
     fn fill(mut self, color: Color32) -> Self {
-        self.assign("fill", color32_rgb(color));
-        if color.a() != 255 {
-            self.assign("fill-opacity", color.a() as f32 / 255.0)
-        }
+        self.assign("fill", color32_rgba(color));
         self
     }
 
     fn stroke(mut self, stroke: egui::Stroke) -> Self {
         self.assign("stroke-width", stroke.width);
-        self.assign("stroke", color32_rgb(stroke.color));
-        if stroke.color.a() != 255 {
-            self.assign("stroke-opacity", stroke.color.a() as f32 / 255.0)
-        }
+        self.assign("stroke", color32_rgba(stroke.color));
         self
     }
 }
