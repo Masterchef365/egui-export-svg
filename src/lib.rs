@@ -101,13 +101,6 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
         EguiShape::Text(text) => {
             let mut group = Group::new();
 
-            // TODO: Different sections have different positions?
-            let anchor = match text.galley.job.halign {
-                egui::Align::Min => "start",
-                egui::Align::Center => "middle",
-                egui::Align::Max => "end",
-            };
-
             for row in &text.galley.rows {
                 let Some(last_section_idx_in_row) = row.glyphs.last().map(|s| s.section_index)
                 else {
@@ -161,8 +154,6 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                             .set("y", tl_pos.y)
                             .set("font-size", font_size)
                             .set("font-family", font_family)
-                            // TODO: Match egui's anchoring behaviour for multiple lines(?)
-                            .set("text-anchor", anchor)
                             .set("textLength", width)
                             .fill(color),
                     );
