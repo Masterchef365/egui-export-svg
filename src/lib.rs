@@ -245,11 +245,30 @@ pub fn snapshot(ctx: &egui::Context) -> svg::Document {
     paintlists.sort_by_key(|(id, _)| id.order);
 
     // Convert
+    let mut next_clip_id = 0;
     for (_id, list) in paintlists {
         for clip_shape in list.all_entries() {
-            // TODO: Clipping for SVG paths!
-            let path = shape_to_path(&clip_shape.shape);
-            document = document.add(path);
+            // Clip rectangles must be each assigned an ID
+            // TODO: Make this more efficient- re-use IDs!
+            let clip_id = format!("clip_rect_{next_clip_id}");
+            next_clip_id += 1;
+
+            let clip_path = svg::node::element::ClipPath::new()
+                .set("id", clip_id.clone())
+                .add(
+                    svg::node::element::Rectangle::new()
+                        .set("x", clip_shape.clip_rect.min.x)
+                        .set("y", clip_shape.clip_rect.min.y)
+                        .set("width", clip_shape.clip_rect.width())
+                        .set("height", clip_shape.clip_rect.height()),
+                );
+
+            let group = Group::new()
+                .set("clip-path", format!("url(#{clip_id})"))
+                .add(clip_path)
+                .add(shape_to_path(&clip_shape.shape));
+
+            document = document.add(group);
         }
     }
 
