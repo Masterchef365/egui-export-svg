@@ -314,7 +314,7 @@ pub fn capture_scope(ui: &mut Ui, f: impl FnOnce(&mut Ui) -> bool) -> Option<svg
 
         let total_rect = new_clipped_shapes
             .iter()
-            .fold(egui::Rect::NOTHING, |acc, x| acc.union(x.clip_rect));
+            .fold(egui::Rect::NOTHING, |acc, x| acc.union(x.shape.visual_bounding_rect()));
 
         // Translate everything to the top left corner
         let to_tl = -total_rect.min.to_vec2();
