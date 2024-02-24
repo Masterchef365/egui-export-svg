@@ -7,6 +7,7 @@ fn main() -> eframe::Result<()> {
     let _age = 42;
 
     let mut demo = DemoWindows::default();
+    let mut oneshot = true;
 
     let options = eframe::NativeOptions::default();
     eframe::run_simple_native("Egui export SVG", options, move |ctx, _frame| {
@@ -20,8 +21,16 @@ fn main() -> eframe::Result<()> {
 
         if take_snapshot {
             let doc = snapshot(ctx);
-            let file = std::fs::File::create("snap.svg").unwrap();
+            let fname = "snap.svg";
+            let fullpath = std::env::current_dir().unwrap().join(fname);
+
+            let file = std::fs::File::create(&fullpath).unwrap();
             svg::write(file, &doc).unwrap();
+
+            if oneshot {
+                ctx.open_url(egui::OpenUrl::same_tab(fullpath.to_str().unwrap()));
+                oneshot = false;
+            }
         }
     })
 }
