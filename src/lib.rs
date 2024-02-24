@@ -114,15 +114,36 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
             };
 
             for row in &text.galley.rows {
-                let last_section_idx_in_row = row.glyphs.last().map(|s| s.section_index).unwrap_or(row.section_index_at_start);
+                let Some(last_section_idx_in_row) = row.glyphs.last().map(|s| s.section_index)
+                else {
+                    continue;
+                };
 
                 for sec_idx in row.section_index_at_start..=last_section_idx_in_row {
                     let sec = &text.galley.job.sections[sec_idx as usize];
 
-                    let width: f32 = row.glyphs.iter().filter(|glyph| glyph.section_index == sec_idx).map(|glyph| glyph.size.x).sum();
+                    let width: f32 = row
+                        .glyphs
+                        .iter()
+                        .filter(|glyph| glyph.section_index == sec_idx)
+                        .map(|glyph| glyph.size.x)
+                        .sum();
 
-                    let first_glyph = row.glyphs.iter().find(|glyph| glyph.section_index == sec_idx).unwrap();
-                    let tl_pos = first_glyph.pos;
+                    let substring: String = row
+                        .glyphs
+                        .iter()
+                        .filter(|glyph| glyph.section_index == sec_idx)
+                        .map(|glyph| glyph.chr)
+                        .collect();
+
+                    dbg!(sec_idx);
+                    let first_glyph = row
+                        .glyphs
+                        .iter()
+                        .find(|glyph| glyph.section_index == sec_idx)
+                        .unwrap();
+
+                    let tl_pos = text.pos + first_glyph.pos.to_vec2();
 
                     let font_family = match &sec.format.font_id.family {
                         egui::FontFamily::Proportional => "sans-serif",
@@ -144,15 +165,15 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     let y_offset = row_height - font_size;
 
                     group = group.add(
-                        svg::node::element::Text::new(&s[sec.byte_range.clone()])
-                        .set("x", sec.leading_space + tl_pos.x)
-                        .set("y", tl_pos.y + font_size - y_offset)
-                        .set("font-size", font_size)
-                        .set("font-family", font_family)
-                        // TODO: Match egui's anchoring behaviour for multiple lines(?)
-                        .set("text-anchor", anchor)
-                        .set("textLength", width)
-                        .fill(color),
+                        svg::node::element::Text::new(substring)
+                            .set("x", sec.leading_space + tl_pos.x)
+                            .set("y", tl_pos.y)
+                            .set("font-size", font_size)
+                            .set("font-family", font_family)
+                            // TODO: Match egui's anchoring behaviour for multiple lines(?)
+                            .set("text-anchor", anchor)
+                            .set("textLength", width)
+                            .fill(color),
                     );
                 }
             }
@@ -177,7 +198,13 @@ fn copy_paintlists(ctx: &egui::Context) -> HashMap<egui::LayerId, PaintList> {
 }
 
 fn color32_rgba(color: Color32) -> String {
-    format!("rgba({}, {}, {}, {})", color.r(), color.g(), color.b(), color.a() as f32 / 255.0)
+    format!(
+        "rgba({}, {}, {}, {})",
+        color.r(),
+        color.g(),
+        color.b(),
+        color.a() as f32 / 255.0
+    )
 }
 
 trait EguiColorable: svg::Node + Sized {
