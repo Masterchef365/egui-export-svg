@@ -8,7 +8,10 @@ use svg::{
 
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match shape {
-        egui::Shape::Mesh(_mesh) => Box::new(SvgPath::default()),
+        egui::Shape::Mesh(_mesh) => {
+            eprintln!("TODO: Mesh");
+            Box::new(SvgPath::default())
+        }
         /*egui::Shape::Mesh(mesh) => {
             dbg!(&mesh);
             let mut group = Group::new();
@@ -103,10 +106,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
         EguiShape::Text(text) => {
             let mut group = Group::new();
 
-            let s = text.galley.text();
-
             // TODO: Different sections have different positions?
-            dbg!(text.galley.job.sections.len());
             let anchor = match text.galley.job.halign {
                 egui::Align::Min => "start",
                 egui::Align::Center => "middle",
@@ -136,12 +136,13 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                         .map(|glyph| glyph.chr)
                         .collect();
 
-                    dbg!(sec_idx);
-                    let first_glyph = row
+                    let Some(first_glyph) = row
                         .glyphs
                         .iter()
                         .find(|glyph| glyph.section_index == sec_idx)
-                        .unwrap();
+                    else {
+                        break;
+                    };
 
                     let tl_pos = text.pos + first_glyph.pos.to_vec2();
 
@@ -160,13 +161,9 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                         color = text.fallback_color;
                     }
 
-                    // Account for the space between the bottom of the text and the baseline
-                    let row_height = row.rect.height() / text.galley.rows.len() as f32;
-                    let y_offset = row_height - font_size;
-
                     group = group.add(
                         svg::node::element::Text::new(substring)
-                            .set("x", sec.leading_space + tl_pos.x)
+                            .set("x", tl_pos.x)
                             .set("y", tl_pos.y)
                             .set("font-size", font_size)
                             .set("font-family", font_family)
