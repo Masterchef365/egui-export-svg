@@ -15,7 +15,7 @@ fn main() -> eframe::Result<()> {
                     let name_label = ui.label("Your name: ");
                     ui.text_edit_singleline(&mut name)
                         .labelled_by(name_label.id);
-                    });
+                });
 
                 ui.add(egui::Slider::new(&mut age, 0..=120).text("age"));
                 if ui.button("Increment").clicked() {
@@ -30,7 +30,6 @@ fn main() -> eframe::Result<()> {
                 let file = std::fs::File::create("snap.svg").unwrap();
                 svg::write(file, &doc).unwrap();
             }
-
         });
     })
 }

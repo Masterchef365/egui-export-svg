@@ -1,10 +1,5 @@
-use std::collections::HashMap;
-
-use egui::{epaint::ClippedShape, layers::PaintList, Color32, LayerId, Shape as EguiShape, Ui};
-use svg::{
-    node::element::{path::Data, Group, Path as SvgPath},
-    Node,
-};
+use egui::{epaint::ClippedShape, Color32, LayerId, Shape as EguiShape, Ui};
+use svg::node::element::{path::Data, Group, Path as SvgPath};
 
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match shape {
@@ -314,7 +309,9 @@ pub fn capture_scope(ui: &mut Ui, f: impl FnOnce(&mut Ui) -> bool) -> Option<svg
 
         let total_rect = new_clipped_shapes
             .iter()
-            .fold(egui::Rect::NOTHING, |acc, x| acc.union(x.shape.visual_bounding_rect()));
+            .fold(egui::Rect::NOTHING, |acc, x| {
+                acc.union(x.shape.visual_bounding_rect())
+            });
 
         // Translate everything to the top left corner
         let to_tl = -total_rect.min.to_vec2();
