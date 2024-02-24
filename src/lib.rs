@@ -106,45 +106,55 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
             let s = text.galley.text();
 
             // TODO: Different sections have different positions?
-            for sec in &text.galley.job.sections {
-                let anchor = match text.galley.job.halign {
-                    egui::Align::Min => "start",
-                    egui::Align::Center => "middle",
-                    egui::Align::Max => "end",
-                };
+            dbg!(text.galley.job.sections.len());
+            let anchor = match text.galley.job.halign {
+                egui::Align::Min => "start",
+                egui::Align::Center => "middle",
+                egui::Align::Max => "end",
+            };
 
-                let font_family = match &sec.format.font_id.family {
-                    egui::FontFamily::Proportional => "sans-serif",
-                    egui::FontFamily::Monospace => "monospace",
-                    egui::FontFamily::Name(fam) => {
-                        eprintln!("Font family {} unsupported!", fam);
-                        "sans-serif"
+            for row in &text.galley.rows {
+                let last_section_idx_in_row = row.glyphs.last().map(|s| s.section_index).unwrap_or(row.section_index_at_start);
+
+                for sec_idx in row.section_index_at_start..=last_section_idx_in_row {
+                    let sec = &text.galley.job.sections[sec_idx as usize];
+
+                    let width: f32 = row.glyphs.iter().filter(|glyph| glyph.section_index == sec_idx).map(|glyph| glyph.size.x).sum();
+
+                    let first_glyph = row.glyphs.iter().find(|glyph| glyph.section_index == sec_idx).unwrap();
+                    let tl_pos = first_glyph.pos;
+
+                    let font_family = match &sec.format.font_id.family {
+                        egui::FontFamily::Proportional => "sans-serif",
+                        egui::FontFamily::Monospace => "monospace",
+                        egui::FontFamily::Name(fam) => {
+                            eprintln!("Font family {} unsupported!", fam);
+                            "sans-serif"
+                        }
+                    };
+
+                    let font_size = sec.format.font_id.size;
+                    let mut color = text.override_text_color.unwrap_or(sec.format.color);
+                    if color == Color32::PLACEHOLDER {
+                        color = text.fallback_color;
                     }
-                };
 
-                let font_size = sec.format.font_id.size;
-                let mut color = text.override_text_color.unwrap_or(sec.format.color);
-                if color == Color32::PLACEHOLDER {
-                    color = text.fallback_color;
-                }
+                    // Account for the space between the bottom of the text and the baseline
+                    let row_height = row.rect.height() / text.galley.rows.len() as f32;
+                    let y_offset = row_height - font_size;
 
-                // Stretch the text to fit the rectangle
-                let length = text.galley.rect.width();
-
-                // Account for the space between the bottom of the text and the baseline
-                let row_height = text.galley.rect.height() / text.galley.rows.len() as f32;
-                let y_offset = row_height - font_size;
-
-                group = group.add(
-                    svg::node::element::Text::new(&s[sec.byte_range.clone()])
-                        .set("x", sec.leading_space + text.pos.x)
-                        .set("y", text.pos.y + font_size - y_offset)
+                    group = group.add(
+                        svg::node::element::Text::new(&s[sec.byte_range.clone()])
+                        .set("x", sec.leading_space + tl_pos.x)
+                        .set("y", tl_pos.y + font_size - y_offset)
                         .set("font-size", font_size)
                         .set("font-family", font_family)
+                        // TODO: Match egui's anchoring behaviour for multiple lines(?)
                         .set("text-anchor", anchor)
-                        .set("textLength", length)
+                        .set("textLength", width)
                         .fill(color),
-                );
+                    );
+                }
             }
 
             Box::new(group)
