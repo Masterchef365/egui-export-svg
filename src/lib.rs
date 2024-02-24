@@ -136,15 +136,15 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                         .map(|glyph| glyph.chr)
                         .collect();
 
-                    let Some(first_glyph) = row
+                    let first_glyph_pos = 
+                    row
                         .glyphs
                         .iter()
                         .find(|glyph| glyph.section_index == sec_idx)
-                    else {
-                        break;
-                    };
+                        .map(|glyph| glyph.pos)
+                        .unwrap_or(row.rect.min);
 
-                    let tl_pos = text.pos + first_glyph.pos.to_vec2();
+                    let tl_pos = text.pos + first_glyph_pos.to_vec2();
 
                     let font_family = match &sec.format.font_id.family {
                         egui::FontFamily::Proportional => "sans-serif",
