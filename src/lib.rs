@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use egui::{layers::PaintList, Color32, LayerId, Shape as EguiShape};
+use egui::{epaint::ClippedShape, layers::PaintList, Color32, LayerId, Shape as EguiShape, Ui};
 use svg::{
     node::element::{path::Data, Group, Path as SvgPath},
     Node,
@@ -136,8 +136,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                         .map(|glyph| glyph.chr)
                         .collect();
 
-                    let first_glyph_pos = 
-                    row
+                    let first_glyph_pos = row
                         .glyphs
                         .iter()
                         .find(|glyph| glyph.section_index == sec_idx)
@@ -184,14 +183,10 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     }
 }
 
-fn copy_paintlists(ctx: &egui::Context) -> HashMap<egui::LayerId, PaintList> {
-    let layer_ids: Vec<LayerId> = ctx.memory(|mem| mem.layer_ids().collect());
-    ctx.graphics(|gfx| {
-        layer_ids
-            .into_iter()
-            .filter_map(|id| gfx.get(id).map(|paint| (id, paint.clone())))
-            .collect()
-    })
+fn sorted_layer_ids(ctx: &egui::Context) -> Vec<LayerId> {
+    let mut layer_ids: Vec<LayerId> = ctx.memory(|mem| mem.layer_ids().collect());
+    layer_ids.sort_by_key(|id| id.order);
+    layer_ids
 }
 
 fn color32_rgba(color: Color32) -> String {
@@ -225,52 +220,113 @@ pub fn wrap(ui: &mut Ui, f: impl FnOnce(&mut Ui) -> egui::InnerResponse<bool>) -
 }
 */
 
+fn rect_to_viewbox(rect: egui::Rect) -> (f32, f32, f32, f32) {
+    (rect.min.x, rect.min.y, rect.width(), rect.height())
+}
+
+/// Take a snapshot of the entire screen as SVG
 pub fn snapshot(ctx: &egui::Context) -> svg::Document {
     // Steal graphics data from context
-    let paintlists = copy_paintlists(ctx);
+    let layer_ids = sorted_layer_ids(ctx);
+    let clipped_shapes: Vec<ClippedShape> = ctx.graphics(|gfx| {
+        layer_ids
+            .into_iter()
+            .filter_map(|id| {
+                gfx.get(id)
+                    .map(|paint| paint.all_entries().cloned().collect::<Vec<_>>())
+            })
+            .flatten()
+            .collect()
+    });
 
     // Set viewbox to screen rect.
     // TODO: Is this what we want?
-    let screen_rect = ctx.screen_rect();
-    let viewbox = (
-        screen_rect.min.x,
-        screen_rect.min.y,
-        screen_rect.width(),
-        screen_rect.height(),
-    );
-    let mut document = svg::Document::new().set("viewBox", viewbox);
+    let viewbox = rect_to_viewbox(ctx.screen_rect());
 
-    // Sort layers back to front
-    let mut paintlists: Vec<(egui::LayerId, PaintList)> = paintlists.into_iter().collect();
-    paintlists.sort_by_key(|(id, _)| id.order);
+    svg::Document::new()
+        .set("viewBox", viewbox)
+        .add(clipped_shapes_to_group(&clipped_shapes))
+}
 
-    // Convert
+fn clipped_shapes_to_group(shapes: &[ClippedShape]) -> Group {
+    let mut group = Group::new();
+
     let mut next_clip_id = 0;
-    for (_id, list) in paintlists {
-        for clip_shape in list.all_entries() {
-            // Clip rectangles must be each assigned an ID
-            // TODO: Make this more efficient- re-use IDs!
-            let clip_id = format!("clip_rect_{next_clip_id}");
-            next_clip_id += 1;
+    for clip_shape in shapes {
+        // Clip rectangles must be each assigned an ID
+        // TODO: Make this more efficient- re-use IDs!
+        let clip_id = format!("clip_rect_{next_clip_id}");
+        next_clip_id += 1;
 
-            let clip_path = svg::node::element::ClipPath::new()
-                .set("id", clip_id.clone())
-                .add(
-                    svg::node::element::Rectangle::new()
-                        .set("x", clip_shape.clip_rect.min.x)
-                        .set("y", clip_shape.clip_rect.min.y)
-                        .set("width", clip_shape.clip_rect.width())
-                        .set("height", clip_shape.clip_rect.height()),
-                );
+        let clip_path = svg::node::element::ClipPath::new()
+            .set("id", clip_id.clone())
+            .add(
+                svg::node::element::Rectangle::new()
+                    .set("x", clip_shape.clip_rect.min.x)
+                    .set("y", clip_shape.clip_rect.min.y)
+                    .set("width", clip_shape.clip_rect.width())
+                    .set("height", clip_shape.clip_rect.height()),
+            );
 
-            let group = Group::new()
-                .set("clip-path", format!("url(#{clip_id})"))
-                .add(clip_path)
-                .add(shape_to_path(&clip_shape.shape));
+        let clip_group = Group::new()
+            .set("clip-path", format!("url(#{clip_id})"))
+            .add(clip_path)
+            .add(shape_to_path(&clip_shape.shape));
 
-            document = document.add(group);
-        }
+        group = group.add(clip_group);
     }
 
-    document
+    group
+}
+
+/// Runs the given function and, if it returns `true`, returns an SVG document
+pub fn capture_scope(ui: &mut Ui, f: impl FnOnce(&mut Ui) -> bool) -> Option<svg::Document> {
+    let layer_ids = sorted_layer_ids(ui.ctx());
+
+    let lengths_before: Vec<usize> = ui.ctx().graphics(|gfx| {
+        layer_ids
+            .iter()
+            .copied()
+            .filter_map(|id| gfx.get(id).map(|paint| paint.all_entries().len()))
+            .collect()
+    });
+
+    let do_capture = f(ui);
+
+    do_capture.then(|| {
+        // Find the difference between the old and new shape vectors
+        let mut new_clipped_shapes: Vec<ClippedShape> = ui.ctx().graphics(|gfx| {
+            layer_ids
+                .into_iter()
+                .zip(lengths_before)
+                .filter_map(|(id, idx_before)| {
+                    gfx.get(id).map(|paint| {
+                        paint
+                            .all_entries()
+                            .skip(idx_before)
+                            .cloned()
+                            .collect::<Vec<_>>()
+                    })
+                })
+                .flatten()
+                .collect()
+        });
+
+        let total_rect = new_clipped_shapes
+            .iter()
+            .fold(egui::Rect::NOTHING, |acc, x| acc.union(x.clip_rect));
+
+        // Translate everything to the top left corner
+        let to_tl = -total_rect.min.to_vec2();
+        new_clipped_shapes.iter_mut().for_each(|clip_shape| {
+            clip_shape.clip_rect = clip_shape.clip_rect.translate(to_tl);
+            clip_shape.shape.translate(to_tl);
+        });
+
+        let viewbox = rect_to_viewbox(total_rect.translate(to_tl));
+
+        svg::Document::new()
+            .set("viewBox", viewbox)
+            .add(clipped_shapes_to_group(&new_clipped_shapes))
+    })
 }
