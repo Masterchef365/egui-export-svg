@@ -132,7 +132,8 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 let length = text.galley.rect.width();
 
                 // Account for the space between the bottom of the text and the baseline
-                let y_offset = text.galley.rect.height() - font_size;
+                let row_height = text.galley.rect.height() / text.galley.rows.len() as f32;
+                let y_offset = row_height - font_size;
 
                 group = group.add(
                     svg::node::element::Text::new(&s[sec.byte_range.clone()])

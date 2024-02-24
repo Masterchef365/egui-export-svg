@@ -2,10 +2,6 @@ use egui_demo_lib::DemoWindows;
 use egui_export_svg::snapshot;
 
 fn main() -> eframe::Result<()> {
-    // Our application state:
-    let _name = "Arthur".to_owned();
-    let _age = 42;
-
     let mut demo = DemoWindows::default();
     let mut oneshot = true;
 
