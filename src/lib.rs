@@ -13,9 +13,13 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
             let mut group = Group::new();
             for tri in mesh.indices.chunks_exact(3) {
                 let mut data = Data::new();
-                for idx in tri {
+
+                let pt = mesh.vertices.first().unwrap().pos;
+                data = data.move_to((pt.x, pt.y));
+
+                for idx in &tri[1..] {
                     let pt = mesh.vertices[*idx as usize].pos;
-                    data = data.move_to((pt.x, pt.y));
+                    data = data.line_to((pt.x, pt.y));
                 }
                 data = data.close();
 
@@ -29,7 +33,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
             }
             Box::new(group)
         }
-        _ | egui::Shape::Noop => Box::new(SvgPath::default()),
+        egui::Shape::Noop => Box::new(SvgPath::default()),
         egui::Shape::Vec(children) => {
             let mut group = Group::new();
             for child in children {
@@ -39,8 +43,11 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
         }
         egui::Shape::Path(path) => {
             let mut data = Data::new();
-            for pt in &path.points {
+            if let Some(pt) = path.points.first() {
                 data = data.move_to((pt.x, pt.y));
+            }
+            for pt in &path.points[1..] {
+                data = data.line_to((pt.x, pt.y));
             }
             if path.closed {
                 data = data.close();
@@ -54,6 +61,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     .set("d", data),
             )
         }
+        /*
         egui::Shape::Circle(circle) => Box::new(
             svg::node::element::Circle::new()
                 .set("cx", circle.center.x)
@@ -144,6 +152,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
 
             Box::new(group)
         }
+        */
         other => {
             println!("{:?}", other);
             Box::new(SvgPath::default())
