@@ -101,7 +101,8 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
         EguiShape::Text(text) => {
             let mut group = Group::new();
 
-            for row in &text.galley.rows {
+            let n_rows = text.galley.rows.len();
+            for (row_idx, row) in text.galley.rows.iter().enumerate() {
                 let Some(last_section_idx_in_row) = row.glyphs.last().map(|s| s.section_index)
                 else {
                     continue;
@@ -113,6 +114,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     let stretch: f32;
                     if text.galley.job.justify
                         && !row.ends_with_newline
+                        && row_idx + 1 != n_rows
                         && sec_idx == last_section_idx_in_row
                     {
                         // If justified, stretch until the end of the line
