@@ -1,3 +1,5 @@
+pub use svg;
+ 
 use egui::{epaint::ClippedShape, Color32, LayerId, Shape as EguiShape, Ui};
 use svg::node::element::{path::Data, Group, Path as SvgPath};
 
