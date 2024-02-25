@@ -116,12 +116,14 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                         stretch = text.galley.rect.width();
                     } else {
                         // Otherwise, only go as far as you need to
+                        let trailing_space = row.glyphs.last().filter(|glyph| glyph.chr.is_whitespace()).map(|glyph| glyph.size.x).unwrap_or(0.0);
+
                         stretch = row
                             .glyphs
                             .iter()
                             .filter(|glyph| glyph.section_index == sec_idx)
                             .map(|glyph| glyph.size.x)
-                            .sum();
+                            .sum::<f32>() - trailing_space;
                     }
 
                     let substring: String = row
