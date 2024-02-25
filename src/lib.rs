@@ -110,12 +110,19 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 for sec_idx in row.section_index_at_start..=last_section_idx_in_row {
                     let sec = &text.galley.job.sections[sec_idx as usize];
 
-                    let width: f32 = row
-                        .glyphs
-                        .iter()
-                        .filter(|glyph| glyph.section_index == sec_idx)
-                        .map(|glyph| glyph.size.x)
-                        .sum();
+                    let stretch: f32;
+                    if text.galley.job.justify && !row.ends_with_newline && sec_idx == last_section_idx_in_row {
+                        // If justified, stretch until the end of the line
+                        stretch = text.galley.rect.width();
+                    } else {
+                        // Otherwise, only go as far as you need to
+                        stretch = row
+                            .glyphs
+                            .iter()
+                            .filter(|glyph| glyph.section_index == sec_idx)
+                            .map(|glyph| glyph.size.x)
+                            .sum();
+                    }
 
                     let substring: String = row
                         .glyphs
@@ -154,7 +161,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                             .set("y", tl_pos.y)
                             .set("font-size", font_size)
                             .set("font-family", font_family)
-                            .set("textLength", width)
+                            .set("textLength", stretch)
                             .fill(color),
                     );
                 }
