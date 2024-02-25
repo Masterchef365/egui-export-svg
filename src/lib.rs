@@ -219,8 +219,10 @@ trait EguiColorable: svg::Node + Sized {
     }
 
     fn stroke(mut self, stroke: egui::Stroke) -> Self {
-        self.assign("stroke-width", stroke.width);
-        self.assign("stroke", color32_rgba(stroke.color));
+        if stroke != egui::Stroke::NONE {
+            self.assign("stroke-width", stroke.width);
+            self.assign("stroke", color32_rgba(stroke.color));
+        }
         self
     }
 }
