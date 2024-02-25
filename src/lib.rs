@@ -262,34 +262,49 @@ pub fn snapshot(ctx: &egui::Context) -> svg::Document {
 }
 
 fn clipped_shapes_to_group(shapes: &[ClippedShape]) -> Group {
-    let mut group = Group::new();
+    let mut output_group = Group::new();
 
-    let mut next_clip_id = 0;
+    let mut current_clip_id = 0;
+    let mut current_clipgroup = None;
+    let mut current_clip_rect = None;
+
     for clip_shape in shapes {
         // Clip rectangles must be each assigned an ID
         // TODO: Make this more efficient- re-use IDs!
-        let clip_id = format!("clip_rect_{next_clip_id}");
-        next_clip_id += 1;
 
-        let clip_path = svg::node::element::ClipPath::new()
-            .set("id", clip_id.clone())
-            .add(
-                svg::node::element::Rectangle::new()
+        if Some(clip_shape.clip_rect) != current_clip_rect  {
+            let clip_id_name = format!("clip_rect_{current_clip_id}");
+            current_clip_id += 1;
+
+            let clip_path = svg::node::element::ClipPath::new()
+                .set("id", clip_id_name.clone())
+                .add(
+                    svg::node::element::Rectangle::new()
                     .set("x", clip_shape.clip_rect.min.x)
                     .set("y", clip_shape.clip_rect.min.y)
                     .set("width", clip_shape.clip_rect.width())
                     .set("height", clip_shape.clip_rect.height()),
-            );
+                );
 
-        let clip_group = Group::new()
-            .set("clip-path", format!("url(#{clip_id})"))
-            .add(clip_path)
-            .add(shape_to_path(&clip_shape.shape));
+            let new_clip_group = Group::new()
+                    .set("clip-path", format!("url(#{clip_id_name})"))
+                    .add(clip_path);
 
-        group = group.add(clip_group);
+            if let Some(old) = std::mem::replace(&mut current_clipgroup, Some(new_clip_group)) {
+                output_group = output_group.add(old);
+            }
+
+            current_clip_rect = Some(clip_shape.clip_rect);
+        }
+
+        current_clipgroup = Some(current_clipgroup.take().unwrap().add(shape_to_path(&clip_shape.shape)));
     }
 
-    group
+    if let Some(last_clipgroup) = current_clipgroup {
+        output_group = output_group.add(last_clipgroup);
+    }
+
+    output_group
 }
 
 /// Runs the given function and, if it returns `true`, returns an SVG document
@@ -321,7 +336,7 @@ pub fn capture_scope(ui: &mut Ui, f: impl FnOnce(&mut Ui) -> bool) -> Option<svg
                             .collect::<Vec<_>>()
                     })
                 })
-                .flatten()
+            .flatten()
                 .collect()
         });
 
