@@ -198,6 +198,9 @@ fn sorted_layer_ids(ctx: &egui::Context) -> Vec<LayerId> {
 }
 
 fn color32_rgba(color: Color32) -> String {
+    if color.is_additive() {
+        println!("{:?}", color);
+    }
     format!(
         "rgba({}, {}, {}, {})",
         color.r(),
