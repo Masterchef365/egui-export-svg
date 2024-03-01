@@ -5,10 +5,6 @@ use svg::node::element::{path::Data, Group, Path as SvgPath};
 
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match shape {
-        /*egui::Shape::Mesh(_mesh) => {
-            eprintln!("TODO: Mesh");
-            Box::new(SvgPath::default())
-        }*/
         egui::Shape::Mesh(mesh) => {
             let mut group = Group::new();
             // TODO: Fast special case for vertices with of all the same color!
@@ -18,18 +14,19 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     .zip(tri_indices)
                     .for_each(|(o, i)| *o = *i as usize);
 
-                let mut data = Data::new();
-
-                let pt = mesh.vertices[tri[0]].pos;
-                data = data.move_to((pt.x, pt.y));
+                let pivot = mesh.vertices[tri[0]].pos;
 
                 // Enforce ordering ordering of triangles in path
-                let vect_a = mesh.vertices[tri[1]].pos - pt;
-                let vect_b = mesh.vertices[tri[2]].pos - pt;
+                let vect_a = mesh.vertices[tri[1]].pos - pivot;
+                let vect_b = mesh.vertices[tri[2]].pos - pivot;
                 if vect_a.x * vect_b.y < vect_a.y * vect_b.x {
                     tri.reverse();
                 }
 
+                // Draw the shape
+                let mut data = Data::new();
+                let first_pt = mesh.vertices[tri[0]].pos;
+                data = data.move_to((first_pt.x, first_pt.y));
                 for idx in &tri[1..] {
                     let pt = mesh.vertices[*idx as usize].pos;
                     data = data.line_to((pt.x, pt.y));
@@ -209,15 +206,11 @@ fn sorted_layer_ids(ctx: &egui::Context) -> Vec<LayerId> {
 }
 
 fn color32_rgba(color: Color32) -> String {
-    /*if color.is_additive() {
-        println!("{:?}", color);
-    }*/
     format!(
         "rgb({}, {}, {})",
         color.r(),
         color.g(),
         color.b(),
-        //color.a() as f32 / 255.0
     )
 }
 
