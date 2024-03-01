@@ -14,15 +14,6 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                     .zip(tri_indices)
                     .for_each(|(o, i)| *o = *i as usize);
 
-                let pivot = mesh.vertices[tri[0]].pos;
-
-                // Enforce ordering ordering of triangles in path
-                let vect_a = mesh.vertices[tri[1]].pos - pivot;
-                let vect_b = mesh.vertices[tri[2]].pos - pivot;
-                if vect_a.x * vect_b.y < vect_a.y * vect_b.x {
-                    tri.reverse();
-                }
-
                 // Draw the shape
                 let mut data = Data::new();
                 let first_pt = mesh.vertices[tri[0]].pos;
