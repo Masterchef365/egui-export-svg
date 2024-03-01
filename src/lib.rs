@@ -3,6 +3,47 @@ pub use svg;
 use egui::{epaint::ClippedShape, Color32, LayerId, Shape as EguiShape, Ui};
 use svg::node::element::{path::Data, Group, Path as SvgPath};
 
+pub enum TextMode {
+    /// Use SVG's builtin fonts
+    Native,
+    /// Convert fonts to meshes before export. EXPENSIVE!
+    Meshed {
+        /// Generate (invisible) selectable text?
+        copyable: bool,
+    },
+}
+
+pub enum MeshMode {
+    /// Only approximate support opaque, textureless meshes
+    Basic,
+    /// Embed textures
+    Textures,
+}
+
+pub struct ConversionOptions {
+    pub text: TextMode,
+    pub mesh: MeshMode,
+}
+
+impl ConversionOptions {
+    /// Lowest detail, lowest file size, highest performance
+    pub fn minimal() -> Self {
+        Self {
+            text: TextMode::Native,
+            mesh: MeshMode::Basic,
+        }
+    }
+
+    /// Highest detail, largest file size, lowest performance
+    pub fn full() -> Self {
+        Self {
+            text: TextMode::Meshed { copyable: true },
+            mesh: MeshMode::Textures,
+        }
+    }
+}
+
+
 pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
     match shape {
         egui::Shape::Mesh(mesh) => {
