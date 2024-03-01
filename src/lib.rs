@@ -10,7 +10,6 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
             Box::new(SvgPath::default())
         }*/
         egui::Shape::Mesh(mesh) => {
-            dbg!(&mesh);
             let mut group = Group::new();
             // TODO: Fast special case for vertices with of all the same color!
             let mut tri: [usize; 3] = [0; 3];
@@ -26,8 +25,8 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
 
                 // Enforce ordering ordering of triangles in path
                 let vect_a = mesh.vertices[tri[1] as usize].pos - pt;
-                let vect_b = mesh.vertices[tri[1] as usize].pos - pt;
-                if vect_a.dot(vect_b) > 0. {
+                let vect_b = mesh.vertices[tri[0] as usize].pos - pt;
+                if vect_a.x * vect_b.y < vect_a.y * vect_b.x {
                     tri.reverse();
                 }
 
