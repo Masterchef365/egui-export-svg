@@ -224,6 +224,9 @@ fn color32_rgba(color: Color32) -> String {
 trait EguiColorable: svg::Node + Sized {
     fn fill(mut self, color: Color32) -> Self {
         self.assign("fill", color32_rgba(color));
+        if !color.is_opaque() {
+            self.assign("fill-opacity", color.r() as f32 / 255.0);
+        }
         self
     }
 
