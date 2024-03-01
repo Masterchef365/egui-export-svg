@@ -36,7 +36,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 }
                 data = data.close();
 
-                let color = Color32::RED;//mesh.vertices[tri[0] as usize].color;
+                let color = mesh.vertices[tri[0] as usize].color;
                 let path = svg::node::element::Path::new().fill(color).set("d", data);
 
                 group = group.add(path);
@@ -213,11 +213,11 @@ fn color32_rgba(color: Color32) -> String {
         println!("{:?}", color);
     }*/
     format!(
-        "rgba({}, {}, {}, {})",
+        "rgb({}, {}, {})",
         color.r(),
         color.g(),
         color.b(),
-        color.a() as f32 / 255.0
+        //color.a() as f32 / 255.0
     )
 }
 
