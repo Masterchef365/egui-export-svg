@@ -20,12 +20,12 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
 
                 let mut data = Data::new();
 
-                let pt = mesh.vertices.first().unwrap().pos;
+                let pt = mesh.vertices[tri[0]].pos;
                 data = data.move_to((pt.x, pt.y));
 
                 // Enforce ordering ordering of triangles in path
-                let vect_a = mesh.vertices[tri[1] as usize].pos - pt;
-                let vect_b = mesh.vertices[tri[0] as usize].pos - pt;
+                let vect_a = mesh.vertices[tri[1]].pos - pt;
+                let vect_b = mesh.vertices[tri[2]].pos - pt;
                 if vect_a.x * vect_b.y < vect_a.y * vect_b.x {
                     tri.reverse();
                 }
@@ -36,7 +36,7 @@ pub fn shape_to_path(shape: &egui::Shape) -> Box<dyn svg::Node> {
                 }
                 data = data.close();
 
-                let color = mesh.vertices[tri[0] as usize].color;
+                let color = Color32::RED;//mesh.vertices[tri[0] as usize].color;
                 let path = svg::node::element::Path::new().fill(color).set("d", data);
 
                 group = group.add(path);
